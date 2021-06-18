@@ -1,0 +1,51 @@
+<html>
+<head>
+    <title>El titulo</title>
+    <script src= 'ball.js'>
+
+    </script>
+  </head>
+  <body>
+<h1>  El hearder  </h1>
+<p> Este es el parrafo p</p>
+<h2>que es esto? </h2>
+<a href="http://facebook.com">vamos a Facebook </a>
+<canvas width = '700' height= '700' id='Juan'> </canvas>
+<img src='rad8.jpg' width= "200">
+
+<script>
+  var c = document.getElementById('Juan');
+  var ctx = c.getContext("2d");
+  var suma = function(x,y){
+      return x+y;
+  };
+  
+  //var circulo = new ball(350,350,100);
+  var arr = [];
+  for (var i =0 ; i<10;i++){
+      var x = Math.round(600*Math.random());
+      var y = Math.round(300*Math.random());
+      var r = 5+Math.round(55*Math.random());
+      var bx = 10*Math.random() -5;
+      var by = 10*Math.random() -5;
+      var b = new ball(x,y,r);
+      b.set_velocity(bx,by);
+      arr.push(b);
+  };
+  var g =[0,2];
+  var feedback = function(){
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0,0,700,700);
+    ctx.fillStyle = "#FF5555";
+    for (var i =0 ; i<10; i++){
+      arr[i].apply_force(g);
+    arr[i].update();
+    arr[i].draw(ctx);
+  
+    }
+    };
+  window.setInterval(feedback,45);
+
+</script>
+    </body>
+</html>

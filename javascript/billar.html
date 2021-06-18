@@ -1,0 +1,336 @@
+<html>
+<head>
+<title>
+	BILLAR
+</title>
+
+</head>
+<body>
+<h1> Tonces q	</h1>
+
+<a href="ej1.html">primera animacion </a>
+<br>
+<canvas width ="500" height ="750" id='billar' style="border:solid 4px;" onmousedown="hit(event)" onmouseup="bye(event)" onmousemove = "move(event)"></canvas>
+
+<script>
+var margen_x = 50;
+var margen_y = 50;
+var width = 500;
+var height = 750;
+var vector = function(x,y){
+	this.x = x;
+	this.y = y;
+	this.add = function(v){
+		this.x = v.x + this.x;
+		this.y = v.y + this.y;	
+	};
+
+	this.diff = function(v){
+			this.x = this.x - v.x;
+			this.y = this.y - v.y ;
+			};
+	this.norm = function(){
+		return Math.sqrt( this.x**2 + this.y**2) ;
+	}
+
+	this.uni = function(){
+		var  n = this.norm();
+		this.x = this.x / n;
+		this.y = this.y /n;
+	} 
+	this.scalar = function(s){
+		this.x = this.x*s;
+		this.y = this.y*s;
+	}
+	vector.scalar  = function(v,s){
+		return new vector(s*v.x,s*v.y);
+	} 
+
+	this.dot = function(v){
+		return this.x*v.x +this.y*v.y ;
+	};
+
+	this.set = function(x,y){
+		this.x = x;
+		this.y = y;
+	}
+
+	this.dist = function(v){
+		return Math.sqrt((this.x -v.x)**2+ (this.y -v.y)**2);
+	}
+	vector.add = function(v1,v2){
+		return new vector(v1.x+v2.x,v1.y+v2.y);
+	};
+	vector.diff = function(v1,v2){
+		return new vector(v1.x-v2.x, v1.y-v2.y);
+	};
+
+	}
+
+
+
+
+	var ball = function(mass, p, r, c){
+		this.m = mass;
+		this.p = p ;
+		this.r = r;
+		this.c = c;
+		this.v = new vector(0,0);
+		this.set_v = function(vx,vy){
+			this.v.set(vx,vy);
+			
+		};
+		this.update = function(){
+			this.p.add(this.v);
+
+			if(this.p.x + this.r >= width - margen_x){
+				this.v.x = -this.v.x;
+				this.p.x = width - margen_x - this.r;
+			};
+			if(this.p.x -this.r <= margen_x ){
+				this.v.x = -this.v.x;
+				this.p.x = margen_x +this.r;
+			};
+			if(this.p.y + this.r >=height - margen_y){
+				this.v.y = -this.v.y;
+				this.p.y = height - margen_y - this.r;
+			};
+			if(this.p.y - this.r<= margen_y){
+				this.v.y  = -this.v.y;
+				this.p.y = margen_y + this.r;
+			};
+		};
+		this.draw = function(ctx){
+			ctx.save();
+			ctx.beginPath();
+			ctx.fillStyle = this.c;
+			ctx.lineWidth = 3;
+		//	ctx.moveTo(this.p.x,this.p.y);
+		//	ctx.lineTo(this.p.x+ this.r*Math.cos(Math.PI/3),this.p.y+this.r*Math.sin(Math.PI/3));
+
+
+			ctx.arc(this.p.x, this.p.y ,this.r,0*Math.PI/3, 2*Math.PI);
+
+			//ctx.lineTo(this.p.x,this.p.y);
+			
+			ctx.stroke();
+			ctx.fill();
+			ctx.restore();		
+		};
+		this.kinetic_energy = function(){
+			return this.m*this.v.norm()**2 / 2;
+		};
+
+	}
+
+
+var hole = function(p){
+	this.p = p;
+	this.r = 40;
+	this.draw = function(ctx){
+
+		var angulo_i = 0;
+		var angulo_f = Math.PI/2;
+		ctx.beginPath();
+		ctx.fillStyle = "#000000";
+		if(this.p.x == margen_x){
+				if(this.p.y > margen_y){
+					angulo_i = 3*Math.PI/2;
+                 	angulo_f = 2*Math.PI;
+				}
+				else{
+
+				}
+		}
+		else{
+			if (this.p.y > margen_y){
+				angulo_i = Math.PI;
+				angulo_f = 3*Math.PI/2;
+			}
+			else{
+				angulo_i = Math.PI/2;
+				angulo_f = Math.PI
+			}
+		}
+		ctx.moveTo(this.p.x,this.p.y);
+		ctx.lineTo(this.p.x+ this.r*Math.cos(angulo_i),this.p.y+this.r*Math.sin(angulo_i));
+		ctx.arc(this.p.x,this.p.y,40, angulo_i,angulo_f);
+		ctx.lineTo(this.p.x,this.p.y);
+		ctx.stroke();
+		ctx.fill();
+
+	};
+}
+
+
+var goal =function(b1,b2){
+	if(b1.p.dist(b2.p)<= 40){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
+
+
+var crash = function(b1,b2){
+	if (b1.p.dist(b2.p) <= b1.r+b2.r ){ 
+		return true;
+	}
+	else{
+		return false;
+		}
+	}
+
+
+var collide = function(b1,b2){
+	if (crash(b1,b2) ){
+		
+		var R = vector.diff(b1.p,b2.p);
+		R.uni();
+		var u1 = vector.scalar(R,b1.v.dot(R));
+		var w1 = vector.diff(b1.v,u1);
+		var u2 = vector.scalar(R,b2.v.dot(R));
+		var w2 = vector.diff(b2.v,u2);
+		var n1 = u1.dot(R);
+		var n2 = u2.dot(R);
+		if(n1>n2){
+			return ;
+		}
+	
+
+		var n1f = (2*b2.m*n2+ (b1.m-b2.m)*n1)/(b1.m+b2.m);
+		var n2f = (2*b1.m*n1+ (b2.m-b1.m)*n2)/(b1.m+b2.m);
+		
+		var x1 = vector.add(vector.scalar(R,n1f),w1);
+		var x2 = vector.add(vector.scalar(R,n2f),w2);
+		b1.set_v(x1.x,x1.y);
+		b2.set_v(x2.x,x2.y);
+
+	}
+}
+
+var clear = function(ctx){
+		ctx.save();
+		ctx.beginPath();
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillRect(0,0,width,height);
+		ctx.restore();
+} 
+var ctx = document.getElementById("billar").getContext("2d");
+
+var init_game = function (){
+	var tri = [];
+	var first = new vector(width/2,height- 350);
+	for (var i=0 ; i<5;i++){
+
+		for(var j =0; j< i+1;j++){
+			var b = new ball(1,new vector(first.x+ j*30,first.y),15,"#00FFAA");
+			tri.push(b);
+
+		}
+		first.x = first.x - Math.sin(Math.PI/6)*30;
+		first.y = first.y + Math.cos(Math.PI/6)*30;
+	}
+	tri.push(new ball(1,new vector(width/2,height/8 +margen_y),15,"#FFFFFF"));
+	return tri ;
+}
+
+  var balls= init_game();
+  	var initial = new vector(0,0) ;
+  	var final = new vector(0,0);
+  	var bandera = false ;
+  	var indice = 0 ; 
+
+	var hit = function(e){
+		console.log(e.offsetX,e.offsetY);
+		initial.set(e.offsetX,e.offsetY);
+		final.set(e.offsetX,e.offsetY);
+		for (var i in balls){
+			if (initial.dist(balls[i].p) < balls[i].r){
+				bandera = true;
+				initial.set(balls[i].p.x,balls[i].p.y);
+				indice = i; 
+				break;
+
+			}
+		}
+	};
+
+	var bye = function(e){
+		final.set(e.offsetX,e.offsetY);
+		if(bandera){ 
+			var vel = vector.diff(final,initial);
+			vel= vector.scalar(vel,-0.3);
+			balls[indice].set_v(vel.x,vel.y);
+			bandera =false;
+
+		}
+	};
+
+	var move = function(e){
+		if (bandera){
+			final.set(e.offsetX,e.offsetY);
+			}
+	};
+ var count =0 ; 
+
+var holes_set= []
+
+holes_set.push(new hole( new vector(margen_x, margen_y)));
+holes_set.push(new hole(new vector(width- margen_x,margen_y)));
+holes_set.push(new hole(new vector(margen_x, height -margen_y)));
+holes_set.push(new hole(new vector(width - margen_x, height - margen_y)));
+
+ var call = function(){
+ 	count+= 1;
+ 	clear(ctx);
+ 	ctx.beginPath();
+ 	ctx.fillStyle = "#00FF00";
+ 	ctx.fillRect(margen_x,margen_y,width- 2*margen_x, height - 2*margen_y);
+ 	for(var i in balls){
+ 		balls[i].update();
+ 		balls[i].draw(ctx);
+ 	};
+
+ 	for (var i in holes_set){
+ 		holes_set[i].draw(ctx);
+ 	}
+ 	if (bandera){
+ 		var dist = final.dist(initial);
+			ctx.beginPath();
+			ctx.fillRect(width,height,-50,-10*dist);
+		
+ 	}
+ 	for(var i =0 ; i< balls.length -1 ;i++){
+
+ 		for(var j = i+1; j< balls.length; j++){
+ 				collide(balls[i],balls[j]);
+ 		}
+
+ 	};
+
+ 	for(var i =0 ; i < balls.length;i++){
+		for (var j =0 ; j< holes_set.length; j++){
+			if(goal(balls[i],holes_set[j])){
+				balls.splice(i,1);
+			}
+		}
+
+ 	}
+ 	if (count>20){
+ 		for(var i in balls){
+ 			balls[i].v.scalar(0.8);
+ 		}
+ 		count = 0;
+ 	}
+ 
+ };
+
+ window.setInterval(call,10);
+
+
+</script>
+	</body>
+</html>
